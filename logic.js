@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
+const { error, log } = require('console');
 /*
 //***************** Doing the operations with an array ************************************
 var todoList = []
@@ -53,10 +54,13 @@ router.delete('/:id', (req, res) => {
     }
 });
 */
+
+//***************** Doing the operations with a file ************************************
 router.get('/', (req, res) => {
     fs.readFile('db.json', 'utf8', (err, jsonString) => {
         if (err) {
             console.error('Error reading file:', err);
+            res.status(400).send("Error parsing")
             return;
         }
 
@@ -66,11 +70,64 @@ router.get('/', (req, res) => {
             res.send(jsonObject);
         } catch (error) {
             console.error('Error parsing JSON string:', error);
+            res.status(400).send("Error parsing")
         }
     });
 });
 
-//***************** Doing the operations with a file ************************************
+router.get('/:id', (req, res) => {
+    fs.readFile('db.json', 'utf8', (err, jsonString) => {
+        if (err) {
+            console.error('Error reading file:', err);
+            res.status(400).send("Error parsing")
+            return;
+        }
+
+        try {
+            const jsonObject = JSON.parse(jsonString);
+
+            for (const curr of jsonObject) {
+                if (curr.id == req.params.id)
+                    res.send(curr);
+            }
+        } catch (error) {
+            console.error('Error parsing JSON string:', error);
+            res.status(400).send("Error parsing")
+        }
+    });
+});
+
+router.put('/:id', (req, res) => {
+    const { title, isDone } = req.body;
+
+    fs.readFile('db.json', 'utf8', (err, data) => {
+        if (err) {
+            console.error('Error reading file:', err);
+            res.status(500).send("Error!");
+            return;
+        }
+
+        try {
+            const existingData = JSON.parse(data);
+            let ind = existingData.findIndex(curr => curr.id == req.params.id);
+            if (ind === -1) throw error
+            existingData[ind].title = title;
+            existingData[ind].isDone = isDone;
+
+            const updatedDataString = JSON.stringify(existingData);
+            fs.writeFile('db.json', updatedDataString, 'utf8', (err) => {
+                if (err) {
+                    console.log(err.message);
+                }
+                console.log("Written to the file with updates");
+            })
+            res.send("Updated")
+        } catch (error) {
+            console.error('Not found in file:');
+            res.status(404).send("Not found!");
+        }
+    });
+});
 
 router.post('/', (req, res) => {
     const { title, isDone } = req.body;
@@ -81,17 +138,62 @@ router.post('/', (req, res) => {
         title: title,
         isDone: isDone
     };
-    
-    const jsonString = JSON.stringify(jsonObject, null, 2);
 
-    // Write the JSON string to a file
-    fs.appendFile('db.json', jsonString, 'utf8', (err) => {
+    fs.readFile('db.json', 'utf8', (err, data) => {
         if (err) {
-            console.error('Error writing file:', err);
+            console.error('Error reading file:', err);
             return;
         }
-        console.log('JSON object written to file successfully.');
+
+        try {
+            // Parse JSON string into a JavaScript object
+            const existingData = JSON.parse(data);
+
+            // Modify the JavaScript object 
+            existingData.push(jsonObject);
+
+            // Serialize the modified object back to a JSON string
+            const updatedDataString = JSON.stringify(existingData, null, 2);
+
+            // Append the JSON string to the file
+            fs.writeFile('db.json', updatedDataString, 'utf8', (err) => {
+                if (err) {
+                    console.error('Error appending to file:', err);
+                    return;
+                }
+                console.log('Data appended to file successfully.');
+                res.send("OK");
+            });
+        } catch (error) {
+            console.error('Error parsing JSON string:', error);
+            res.status(404).send("Error parsing")
+        }
     });
-    res.send("success");
 });
+
+router.delete('/:id', (req, res) => {
+    fs.readFile('db.json', 'utf8', (err, data) => {
+        if (err) {
+            console.error('Error reading file:', err);
+            res.status(500).send("Error!");
+            return;
+        }
+
+        try {
+            const existingData = JSON.parse(data);
+            let ind = existingData.findIndex(curr => curr.id == req.params.id);
+            if (ind === -1) throw error
+            existingData.splice(ind, 1);
+            const updatedDataString = JSON.stringify(existingData);
+            fs.writeFile('db.json', updatedDataString, 'utf8', (err) => {
+                console.log("Problem occured");
+            })
+            res.send("Deleted")
+        } catch (error) {
+            console.error('Not found in file:');
+            res.status(404).send("Not found!");
+        }
+    });
+});
+
 module.exports = router;
