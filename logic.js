@@ -186,7 +186,8 @@ router.delete('/:id', (req, res) => {
             existingData.splice(ind, 1);
             const updatedDataString = JSON.stringify(existingData);
             fs.writeFile('db.json', updatedDataString, 'utf8', (err) => {
-                console.log("Problem occured");
+                if(err)
+                    console.log("Problem occured");
             })
             res.send("Deleted")
         } catch (error) {

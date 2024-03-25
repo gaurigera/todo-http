@@ -3,22 +3,22 @@ using assignment from 100xdevs course
 */
 const express = require('express');
 const bodyParser = require('body-parser');
+const path = require('path')
 
-const port = process.env.port || 5500;
+const port = process.env.port || 3000;
 const router = express.Router();
 
 const todoRoutes = require('./logic');
 
 const app = express();
 
-
-app.get('/', (req, res) => {
-    res.send("Welcome! You have managed to find me. Let me show you tricks =>")
-});
-
 //request shall first go through body parser
 app.use(bodyParser.json());
 app.use('/todos', todoRoutes);
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, "index.html"));
+});
 
 app.listen(port, () => { console.log("request is heard at " + port); })
 

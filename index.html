@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-do App</title>
+</head>
+
+<script>
+    function init() {
+        fetch("http://127.0.0.1:3000/todos/", {
+            method: "GET"
+        }).then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to fetch todos');
+            }
+            return response.json();
+        })
+            .then(data => {
+                displayTodos(data);
+            })
+            .catch(error => {
+                console.error('Error fetching todos:', error);
+            });
+    }
+    function callback(data) {
+        console.log(data);
+    }
+    function displayTodos(resp) {
+        const todoRegion = document.querySelector('#div-todo')
+        todoRegion.innerHTML = "";
+
+        resp.forEach(todo => {
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = 'todo_' + todo.id;
+            checkbox.checked = todo.isDone;
+
+            // Create a label element for the checkbox
+            const label = document.createElement('label');
+            label.htmlFor = 'todo_' + todo.id;
+            label.textContent = todo.title;
+
+            const deleteButton = document.createElement('button');
+            deleteButton.id = 'todo_' + todo.id;
+            deleteButton.innerHTML = "Delete";
+
+            const todoId = todo.id
+            deleteButton.addEventListener('click', function () {
+                fetch("http://127.0.0.1:3000/todos/" + todoId, {
+                    method: "DELETE"
+                }).then(
+                    init
+                )
+            });
+            // Create a paragraph element
+            const paragraph = document.createElement('p');
+
+            // Append the checkbox and label to the paragraph
+            paragraph.appendChild(checkbox);
+            paragraph.appendChild(label);
+            paragraph.appendChild(deleteButton);
+
+            todoRegion.appendChild(paragraph);
+        });
+    }
+
+    function fnc(res) {
+        res.json().then(callback)
+    }
+
+    function onClick() {
+        const ele = document.querySelector('#input-text');
+
+        fetch("http://127.0.0.1:3000/todos/", {
+            method: "POST", body: JSON.stringify({
+                title: ele.value,
+                isDone: false
+            }), headers: {
+                "Content-Type": "application/json",
+
+            }
+        }).then(fnc).then(init)
+
+        ele.value = "";
+    }
+
+    init();
+</script>
+
+<body>
+    <div>
+        <p>
+            Enter a To-do
+        </p>
+        <input id="input-text" type="text">
+        <button onclick="onClick()">Submit</button>
+    </div>
+    <div id="div-todo"></div>
+</body>
+
+</html>
